@@ -15,7 +15,7 @@ import java.time.Duration;
 public class YearsLoop implements SmartLifecycle {
 
     // Chaining Mono and Flux is a tip to avoid waiting the initial delay before the first emission.
-    // Note that we can safely construct the Flux here as nothing will happen until the .subscribe() method will be called.
+    // Also note that we can safely construct the Flux here as nothing will happen until the .subscribe() method will be called.
     static Flux<Integer> getGenerator() {
         return Mono.just(1).concatWith(Flux.range(2, 6).delayElements(Duration.ofSeconds(10)));
     }
@@ -24,11 +24,9 @@ public class YearsLoop implements SmartLifecycle {
     private static final Logger LOGGER = LoggerFactory.getLogger(YearsLoop.class);
     private final Flux<Integer> yearFlux;
     private Disposable yearSubscription;
-    private final ConfigurableApplicationContext applicationContext;
 
     public YearsLoop(ConfigurableApplicationContext applicationContext) {
-        this.applicationContext = applicationContext;
-        this.yearFlux = getGenerator().doOnComplete(this.applicationContext::close);
+        this.yearFlux = getGenerator().doOnComplete(applicationContext::close);
     }
 
     @Override
