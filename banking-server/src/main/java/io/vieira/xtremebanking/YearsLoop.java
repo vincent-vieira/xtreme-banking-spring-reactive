@@ -7,26 +7,17 @@ import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Component;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
-import java.time.Duration;
 
 @Component
 public class YearsLoop implements SmartLifecycle {
-
-    // Chaining Mono and Flux is a tip to avoid waiting the initial delay before the first emission.
-    // Also note that we can safely construct the Flux here as nothing will happen until the .subscribe() method will be called.
-    static Flux<Integer> getGenerator() {
-        return Mono.just(1).concatWith(Flux.range(2, 6).delayElements(Duration.ofSeconds(10)));
-    }
 
     private boolean started = false;
     private static final Logger LOGGER = LoggerFactory.getLogger(YearsLoop.class);
     private final Flux<Integer> yearFlux;
     private Disposable yearSubscription;
 
-    public YearsLoop(ConfigurableApplicationContext applicationContext) {
-        this.yearFlux = getGenerator().doOnComplete(applicationContext::close);
+    public YearsLoop(ConfigurableApplicationContext applicationContext, Flux<Integer> generator) {
+        this.yearFlux = generator.doOnComplete(applicationContext::close);
     }
 
     @Override

@@ -1,5 +1,6 @@
 package io.vieira.xtremebanking;
 
+import io.vieira.xtremebanking.time.YearGenerator;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.BlockJUnit4ClassRunner;
@@ -13,7 +14,7 @@ public class YearGeneratorTest {
     @Test
     public void years_should_be_generated_7_times() {
         // 61 seconds delay to skip 7 first items, and 10 seconds more in order to pass the last timeshift, skipped very rapidly thanks to relativity.
-        StepVerifier.withVirtualTime(YearsLoop::getGenerator)
+        StepVerifier.withVirtualTime(() -> YearGenerator.max(7).create())
                 .thenAwait(Duration.ofSeconds(61))
                 .expectNext(1)
                 .expectNext(2)
