@@ -25,6 +25,10 @@
             <artifactId>spring-boot-starter-reactor-netty</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.vieira</groupId>
+            <artifactId>banking-models</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.projectreactor.addons</groupId>
             <artifactId>reactor-test</artifactId>
             <scope>test</scope>

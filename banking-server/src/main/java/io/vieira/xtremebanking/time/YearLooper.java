@@ -1,7 +1,8 @@
-package io.vieira.xtremebanking;
+package io.vieira.xtremebanking.time;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Component;
@@ -9,14 +10,18 @@ import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 
 @Component
-public class YearsLoop implements SmartLifecycle {
+public class YearLooper implements SmartLifecycle {
+
+    public static final int PHASE = Integer.MAX_VALUE;
+    private final int maxYears;
 
     private boolean started = false;
-    private static final Logger LOGGER = LoggerFactory.getLogger(YearsLoop.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(YearLooper.class);
     private final Flux<Integer> yearFlux;
     private Disposable yearSubscription;
 
-    public YearsLoop(ConfigurableApplicationContext applicationContext, Flux<Integer> generator) {
+    public YearLooper(ConfigurableApplicationContext applicationContext, Flux<Integer> generator, @Value("${xtreme-banking.max-years:7}") int maxYears) {
+        this.maxYears = maxYears;
         this.yearFlux = generator.doOnComplete(applicationContext::close);
     }
 
@@ -33,14 +38,17 @@ public class YearsLoop implements SmartLifecycle {
 
     @Override
     public void start() {
-        LOGGER.info("Game on ! Starting year generation");
+        LOGGER.info("Game on ! Starting year 1...");
         this.started = true;
-        this.yearSubscription = this.yearFlux.subscribe(dayValue -> LOGGER.info("Currently on year {}", dayValue));
+        this.yearSubscription = this.yearFlux.subscribe(yearValue -> {
+            if(yearValue < maxYears) LOGGER.info("Year {} just finished. Starting year {}...", yearValue, yearValue + 1);
+            else LOGGER.info("Year {} just finished. Quitting game...", yearValue);
+        });
     }
 
     @Override
     public void stop() {
-        LOGGER.info("Game is now over ! Stopping year generation");
+        LOGGER.info("Game is now done ! Stopping year generation");
         this.started = false;
         if(!yearSubscription.isDisposed()) {
             yearSubscription.dispose();
@@ -57,6 +65,6 @@ public class YearsLoop implements SmartLifecycle {
      */
     @Override
     public int getPhase() {
-        return Integer.MAX_VALUE;
+        return PHASE;
     }
 }

@@ -12,6 +12,7 @@
     <modules>
         <module>banking-server</module>
         <module>banking-client</module>
+        <module>banking-models</module>
     </modules>
 
     <properties>
@@ -35,6 +36,11 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>io.vieira</groupId>
+                <artifactId>banking-models</artifactId>
+                <version>${project.version}</version>
+            </dependency>
             <dependency>
                 <groupId>io.projectreactor</groupId>
                 <artifactId>reactor-bom</artifactId>
