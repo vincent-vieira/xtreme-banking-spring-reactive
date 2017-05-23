@@ -6,8 +6,6 @@ import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Component;
 import reactor.core.Disposable;
 
-import static io.vieira.xtremebanking.time.YearLooper.PHASE;
-
 @Component
 public class LoansBufferHandler implements SmartLifecycle {
 
@@ -16,14 +14,14 @@ public class LoansBufferHandler implements SmartLifecycle {
     private boolean running = false;
     private Disposable loansSubscription;
 
-    public LoansBufferHandler(LoansBuffer buffer) {
+    public LoansBufferHandler(DefaultLoansBuffer buffer) {
         this.loansBuffer = buffer;
     }
 
     @Override
     public void start() {
         this.running = true;
-        LOGGER.info("Starting loan requests collection");
+        LOGGER.info("Game on ! Starting year 1 and loan requests collection");
         // TODO : calculations and such ?
         this.loansSubscription = loansBuffer.startBuffering().subscribe(loanRequests -> LOGGER.info("Loans : {}", loanRequests));
     }
@@ -31,8 +29,10 @@ public class LoansBufferHandler implements SmartLifecycle {
     @Override
     public void stop() {
         this.running = false;
-        LOGGER.info("Stopping loan requests collection");
-        if(!this.loansSubscription.isDisposed()) this.loansSubscription.dispose();
+        LOGGER.info("Stopping game, and loan requests collection");
+        if(!this.loansSubscription.isDisposed()) {
+            this.loansSubscription.dispose();
+        }
     }
 
     @Override
@@ -48,11 +48,13 @@ public class LoansBufferHandler implements SmartLifecycle {
     @Override
     public void stop(Runnable callback) {
         stop();
-        if(callback != null) callback.run();
+        if(callback != null) {
+            callback.run();
+        }
     }
 
     @Override
     public int getPhase() {
-        return PHASE - 1;
+        return Integer.MAX_VALUE;
     }
 }

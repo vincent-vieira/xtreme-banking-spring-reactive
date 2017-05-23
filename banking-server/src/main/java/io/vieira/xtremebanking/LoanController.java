@@ -1,6 +1,6 @@
 package io.vieira.xtremebanking;
 
-import io.vieira.xtremebanking.loan.LoansBuffer;
+import io.vieira.xtremebanking.loan.DefaultLoansBuffer;
 import io.vieira.xtremebanking.models.LoanRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -12,9 +12,9 @@ import javax.validation.Valid;
 @RestController
 public class LoanController {
 
-    private final LoansBuffer loansBuffer;
+    private final DefaultLoansBuffer loansBuffer;
 
-    public LoanController(LoansBuffer buffer) {
+    public LoanController(DefaultLoansBuffer buffer) {
         this.loansBuffer = buffer;
     }
 
