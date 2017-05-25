@@ -14,7 +14,7 @@ public class LoansBufferHandler implements SmartLifecycle {
     private boolean running = false;
     private Disposable loansSubscription;
 
-    public LoansBufferHandler(DefaultLoansBuffer buffer) {
+    public LoansBufferHandler(LoansBuffer buffer) {
         this.loansBuffer = buffer;
     }
 
@@ -23,7 +23,9 @@ public class LoansBufferHandler implements SmartLifecycle {
         this.running = true;
         LOGGER.info("Game on ! Starting year 1 and loan requests collection");
         // TODO : calculations and such ?
-        this.loansSubscription = loansBuffer.startBuffering().subscribe(loanRequests -> LOGGER.info("Loans : {}", loanRequests));
+        this.loansSubscription = loansBuffer
+                .startBuffering()
+                .subscribe(loanRequests -> LOGGER.info("Loans : {}", loanRequests));
     }
 
     @Override

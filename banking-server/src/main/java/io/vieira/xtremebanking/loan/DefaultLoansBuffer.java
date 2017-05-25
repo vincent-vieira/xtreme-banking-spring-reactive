@@ -17,24 +17,21 @@ public class DefaultLoansBuffer implements LoansBuffer {
     //Buffer is 256 by default
     private final ReplayProcessor<LoanRequest> loanRequestProcessor = ReplayProcessor.create();
     private final Flux<Integer> partitionFlux;
-    private final ConfigurableApplicationContext applicationContext;
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultLoansBuffer.class);
 
     public DefaultLoansBuffer(Flux<Integer> partitionFlux, ConfigurableApplicationContext applicationContext) {
-        this.partitionFlux = partitionFlux;
-        this.applicationContext = applicationContext;
+        this.partitionFlux = partitionFlux.doOnComplete(applicationContext::close);
     }
 
     public void newLoanRequested(LoanRequest request) {
         this.loanRequestProcessor.onNext(request);
     }
 
-    public Flux<LinkedList<LoanRequest>> startBuffering() {
-        return this.loanRequestProcessor.buffer(
-                this.partitionFlux
-                        .doOnComplete(applicationContext::close)
-                        .doOnNext(yearValue -> LOGGER.info("Year {} just finished.", yearValue)),
-                LinkedList::new
-        ).switchIfEmpty(Mono.just(new LinkedList<>()));
+    public Flux<LoanRequestBucket> startBuffering() {
+        return this.loanRequestProcessor
+                .buffer(this.partitionFlux, LinkedList::new)
+                .switchIfEmpty(Mono.just(new LinkedList<>()))
+                .withLatestFrom(this.partitionFlux, (loanRequests, year) -> new LoanRequestBucket(year, loanRequests))
+                .doOnNext(bucket -> LOGGER.info("Year {} just finished. {} request(s) collected.", bucket.getYear(), bucket.getRequests().isEmpty() ? "No" : bucket.getRequests().size()));
     }
 }

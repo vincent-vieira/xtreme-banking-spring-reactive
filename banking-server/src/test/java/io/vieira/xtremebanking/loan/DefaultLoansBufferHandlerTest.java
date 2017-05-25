@@ -10,7 +10,6 @@ import org.springframework.context.ConfigurableApplicationContext;
 import reactor.test.StepVerifier;
 
 import java.time.Duration;
-import java.util.List;
 
 @RunWith(BlockJUnit4ClassRunner.class)
 @SuppressWarnings("unchecked")
@@ -30,7 +29,7 @@ public class DefaultLoansBufferHandlerTest {
                 })
                 .then(() -> this.loansBuffer.newLoanRequested(new LoanRequest()))
                 .thenAwait(Duration.ofSeconds(10))
-                .expectNextMatches(loanRequests -> loanRequests.size() == 1)
+                .expectNextMatches(loanRequestBucket -> loanRequestBucket.getRequests().size() == 1)
                 .expectComplete()
                 .verify();
     }
@@ -46,8 +45,8 @@ public class DefaultLoansBufferHandlerTest {
                 .thenAwait(Duration.ofSeconds(10))
                 .then(() -> this.loansBuffer.newLoanRequested(new LoanRequest()))
                 .thenAwait(Duration.ofSeconds(10))
-                .expectNextMatches(loanRequests -> loanRequests.size() == 1)
-                .expectNextMatches(loanRequests -> loanRequests.size() == 1)
+                .expectNextMatches(loanRequestBucket -> loanRequestBucket.getRequests().size() == 1 && loanRequestBucket.getYear() == 1)
+                .expectNextMatches(loanRequestBucket -> loanRequestBucket.getRequests().size() == 1 && loanRequestBucket.getYear() == 2)
                 .expectComplete()
                 .verify();
     }
@@ -60,7 +59,7 @@ public class DefaultLoansBufferHandlerTest {
                     return this.loansBuffer.startBuffering();
                 })
                 .thenAwait(Duration.ofSeconds(10))
-                .expectNextMatches(List::isEmpty)
+                .expectNextMatches(loanRequestBucket -> loanRequestBucket.getRequests().isEmpty())
                 .expectComplete()
                 .verify();
     }
