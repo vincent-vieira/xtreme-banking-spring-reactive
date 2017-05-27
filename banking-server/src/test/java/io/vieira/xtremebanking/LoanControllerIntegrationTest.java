@@ -1,0 +1,70 @@
+package io.vieira.xtremebanking;
+
+import io.vieira.xtremebanking.exception.GlobalExceptionHandler;
+import io.vieira.xtremebanking.funds.FundsManager;
+import io.vieira.xtremebanking.loan.LoansBuffer;
+import io.vieira.xtremebanking.models.LoanRequest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.web.reactive.function.BodyInserters;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@RunWith(SpringRunner.class)
+@WebFluxTest(LoanController.class)
+@TestPropertySource(properties = {
+        "xtreme-banking.initial-cash=500",
+        "xtreme-banking.call-cost=150"
+})
+@ComponentScan(basePackageClasses = {
+        FundsManager.class,
+        GlobalExceptionHandler.class
+})
+public class LoanControllerIntegrationTest {
+
+    @Autowired
+    private WebTestClient webTestClient;
+
+    @MockBean
+    private LoansBuffer buffer;
+
+    @Autowired
+    private FundsManager fundsManager;
+
+    @Test
+    public void calling_with_a_faulty_loan_request_should_decrement_the_funds_with_the_call_cost_only() throws Exception {
+        webTestClient
+                .post()
+                .uri("loan")
+                .contentType(MediaType.APPLICATION_JSON_UTF8)
+                .body(BodyInserters.fromObject(new LoanRequest("test", 800)))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(HttpStatus.CONFLICT);
+
+        assertThat(fundsManager.getCurrentFunds()).containsEntry("test", 350);
+    }
+
+    @Test
+    public void calling_with_a_valid_loan_request_should_decrement_the_funds_with_the_call_cost_only() throws Exception {
+        webTestClient
+                .post()
+                .uri("loan")
+                .contentType(MediaType.APPLICATION_JSON_UTF8)
+                .body(BodyInserters.fromObject(new LoanRequest("test", 200)))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(HttpStatus.ACCEPTED);
+
+        assertThat(fundsManager.getCurrentFunds()).containsEntry("test", 350);
+    }
+}

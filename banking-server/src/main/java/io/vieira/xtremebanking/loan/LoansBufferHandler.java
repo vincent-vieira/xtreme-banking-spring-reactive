@@ -33,14 +33,6 @@ public class LoansBufferHandler implements SmartLifecycle {
         LOGGER.info("Game on ! Starting year 1 and loan requests collection");
         this.loansSubscription = loansBuffer
                 .startBuffering()
-                // Always make sure a new client has its initial funds
-                .doOnNext(loanRequestsBucket ->
-                        loanRequestsBucket
-                                .getRequests()
-                                .stream()
-                                .map(LoanRequest::getBuyer)
-                                .forEach(fundsManager::tryNewBuyer)
-                )
                 .doOnComplete(applicationContext::close)
                 .subscribe(loanRequestsBucket -> {
                     // TODO : calculate if needed and update
@@ -48,7 +40,6 @@ public class LoansBufferHandler implements SmartLifecycle {
                     if(winnerRequest.isPresent()) {
                         LoanRequest winner = winnerRequest.get();
                         LOGGER.info("Winner for year {} is {} with a higher bid of {}", loanRequestsBucket.getYear(), winner.getBuyer(), winner.getOffer());
-                        this.fundsManager.spend(winner.getBuyer(), winner.getOffer());
                     }
                 });
     }
