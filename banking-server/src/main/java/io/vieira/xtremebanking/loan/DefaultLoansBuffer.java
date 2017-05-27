@@ -33,6 +33,10 @@ public class DefaultLoansBuffer implements LoansBuffer {
                 .skipLast(1)
                 .flatMap(loanRequestsFlux -> loanRequestsFlux.collect(Collectors.toCollection(LinkedList::new)))
                 .withLatestFrom(this.partitionFlux, (loanRequests, year) -> new LoanRequestBucket(year, loanRequests))
-                .doOnNext(bucket -> LOGGER.info("Year {} just finished. {} request(s) collected.", bucket.getYear(), bucket.getRequests().isEmpty() ? "No" : bucket.getRequests().size()));
+                .doOnNext(bucket -> LOGGER.info(
+                        "Year {} just finished. {} request(s) collected.",
+                        bucket.getYear(),
+                        bucket.getRequests().isEmpty() ? "No" : bucket.getRequests().size()
+                ));
     }
 }
