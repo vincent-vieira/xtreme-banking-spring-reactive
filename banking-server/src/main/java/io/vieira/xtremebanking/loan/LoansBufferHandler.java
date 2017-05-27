@@ -1,31 +1,51 @@
 package io.vieira.xtremebanking.loan;
 
+import io.vieira.xtremebanking.funds.FundsManager;
+import io.vieira.xtremebanking.models.LoanRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Component;
 import reactor.core.Disposable;
 
+import java.util.Optional;
+
 @Component
 public class LoansBufferHandler implements SmartLifecycle {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LoansBufferHandler.class);
     private final LoansBuffer loansBuffer;
+    private final FundsManager fundsManager;
     private boolean running = false;
     private Disposable loansSubscription;
 
-    public LoansBufferHandler(LoansBuffer buffer) {
+    public LoansBufferHandler(LoansBuffer buffer, FundsManager fundsManager) {
         this.loansBuffer = buffer;
+        this.fundsManager = fundsManager;
     }
 
     @Override
     public void start() {
         this.running = true;
         LOGGER.info("Game on ! Starting year 1 and loan requests collection");
-        // TODO : calculations and such ?
         this.loansSubscription = loansBuffer
                 .startBuffering()
-                .subscribe(loanRequests -> LOGGER.info("Loans : {}", loanRequests));
+                // Always make sure a new client has its initial funds
+                .doOnNext(loanRequestsBucket ->
+                        loanRequestsBucket
+                                .getRequests()
+                                .stream()
+                                .map(LoanRequest::getBuyer)
+                                .forEach(fundsManager::tryNewBuyer)
+                )
+                .subscribe(loanRequestsBucket -> {
+                    // TODO : calculate if needed and update
+                    Optional<LoanRequest> winnerRequest = loanRequestsBucket.getRequests().stream().sorted().findFirst();
+                    if(winnerRequest.isPresent()) {
+                        LoanRequest winner = winnerRequest.get();
+                        LOGGER.info("Winner for year {} is {} with a higher bid of {}", loanRequestsBucket.getYear(), winner.getBuyer(), winner.getOffer());
+                    }
+                });
     }
 
     @Override
