@@ -5,8 +5,6 @@ import io.vieira.xtremebanking.time.YearGenerator;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.BlockJUnit4ClassRunner;
-import org.mockito.Mockito;
-import org.springframework.context.ConfigurableApplicationContext;
 import reactor.test.StepVerifier;
 
 import java.time.Duration;
@@ -16,7 +14,6 @@ import java.time.Duration;
 public class DefaultLoansBufferHandlerTest {
 
     private LoansBuffer loansBuffer;
-    private final ConfigurableApplicationContext applicationContext = Mockito.mock(ConfigurableApplicationContext.class);
     private final LoanRequest sampleLoanRequest = new LoanRequest("someone", 150);
 
     @Test
@@ -25,7 +22,7 @@ public class DefaultLoansBufferHandlerTest {
         // only on the LoansBuffer Observable, and not on the YearGenerator.
         StepVerifier
                 .withVirtualTime(() -> {
-                    this.loansBuffer = new DefaultLoansBuffer(YearGenerator.max(1).create(), applicationContext);
+                    this.loansBuffer = new DefaultLoansBuffer(YearGenerator.max(1).create());
                     return this.loansBuffer.startBuffering();
                 })
                 .then(() -> this.loansBuffer.newLoanRequested(sampleLoanRequest))
@@ -39,7 +36,7 @@ public class DefaultLoansBufferHandlerTest {
     public void should_buffer_properly_throughout_multiple_years() {
         StepVerifier
                 .withVirtualTime(() -> {
-                    this.loansBuffer = new DefaultLoansBuffer(YearGenerator.max(2).create(), applicationContext);
+                    this.loansBuffer = new DefaultLoansBuffer(YearGenerator.max(2).create());
                     return this.loansBuffer.startBuffering();
                 })
                 .then(() -> this.loansBuffer.newLoanRequested(sampleLoanRequest))
@@ -56,7 +53,7 @@ public class DefaultLoansBufferHandlerTest {
     public void should_not_buffer_anything_unless_invoked() {
         StepVerifier
                 .withVirtualTime(() -> {
-                    this.loansBuffer = new DefaultLoansBuffer(YearGenerator.max(1).create(), applicationContext);
+                    this.loansBuffer = new DefaultLoansBuffer(YearGenerator.max(1).create());
                     return this.loansBuffer.startBuffering();
                 })
                 .thenAwait(Duration.ofSeconds(10))

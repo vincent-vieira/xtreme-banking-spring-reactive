@@ -4,6 +4,7 @@ import io.vieira.xtremebanking.funds.FundsManager;
 import io.vieira.xtremebanking.models.LoanRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Component;
 import reactor.core.Disposable;
@@ -18,10 +19,12 @@ public class LoansBufferHandler implements SmartLifecycle {
     private final FundsManager fundsManager;
     private boolean running = false;
     private Disposable loansSubscription;
+    private ConfigurableApplicationContext applicationContext;
 
-    public LoansBufferHandler(LoansBuffer buffer, FundsManager fundsManager) {
+    public LoansBufferHandler(LoansBuffer buffer, FundsManager fundsManager, ConfigurableApplicationContext applicationContext) {
         this.loansBuffer = buffer;
         this.fundsManager = fundsManager;
+        this.applicationContext = applicationContext;
     }
 
     @Override
@@ -38,12 +41,14 @@ public class LoansBufferHandler implements SmartLifecycle {
                                 .map(LoanRequest::getBuyer)
                                 .forEach(fundsManager::tryNewBuyer)
                 )
+                .doOnComplete(applicationContext::close)
                 .subscribe(loanRequestsBucket -> {
                     // TODO : calculate if needed and update
                     Optional<LoanRequest> winnerRequest = loanRequestsBucket.getRequests().stream().sorted().findFirst();
                     if(winnerRequest.isPresent()) {
                         LoanRequest winner = winnerRequest.get();
                         LOGGER.info("Winner for year {} is {} with a higher bid of {}", loanRequestsBucket.getYear(), winner.getBuyer(), winner.getOffer());
+                        this.fundsManager.spend(winner.getBuyer(), winner.getOffer());
                     }
                 });
     }
