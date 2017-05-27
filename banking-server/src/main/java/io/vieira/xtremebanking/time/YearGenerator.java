@@ -10,6 +10,10 @@ public interface YearGenerator {
     Flux<Integer> create();
 
     static YearGenerator max(int limit) {
-        return () -> Flux.range(1, limit).delayElements(Duration.ofSeconds(10));
+        return () -> Flux.range(1, limit).delayElements(getDuration());
+    }
+
+    static Duration getDuration(){
+        return Duration.ofSeconds(10);
     }
 }

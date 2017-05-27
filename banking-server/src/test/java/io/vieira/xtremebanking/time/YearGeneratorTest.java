@@ -5,7 +5,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.BlockJUnit4ClassRunner;
 import reactor.test.StepVerifier;
 
-import java.time.Duration;
+import static io.vieira.xtremebanking.time.YearGenerator.getDuration;
 
 @RunWith(BlockJUnit4ClassRunner.class)
 public class YearGeneratorTest {
@@ -13,7 +13,7 @@ public class YearGeneratorTest {
     @Test
     public void years_should_be_generated_7_times() {
         StepVerifier.withVirtualTime(() -> YearGenerator.max(7).create())
-                .thenAwait(Duration.ofSeconds(71))
+                .thenAwait(getDuration().multipliedBy(7))
                 .expectNext(1)
                 .expectNext(2)
                 .expectNext(3)
@@ -28,7 +28,7 @@ public class YearGeneratorTest {
     @Test
     public void a_single_year_should_be_also_working() {
         StepVerifier.withVirtualTime(() -> YearGenerator.max(1).create())
-                .thenAwait(Duration.ofSeconds(10))
+                .thenAwait(getDuration())
                 .expectNext(1)
                 .expectComplete()
                 .verify();

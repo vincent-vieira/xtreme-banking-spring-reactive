@@ -2,7 +2,7 @@ package io.vieira.xtremebanking;
 
 import io.vieira.xtremebanking.exception.GlobalExceptionHandler;
 import io.vieira.xtremebanking.funds.FundsManager;
-import io.vieira.xtremebanking.loan.LoansBuffer;
+import io.vieira.xtremebanking.loan.LoanRequestsBuffer;
 import io.vieira.xtremebanking.models.LoanRequest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -35,7 +35,7 @@ public class LoanControllerIntegrationTest {
     private WebTestClient webTestClient;
 
     @MockBean
-    private LoansBuffer buffer;
+    private LoanRequestsBuffer buffer;
 
     @Autowired
     private FundsManager fundsManager;
@@ -51,7 +51,7 @@ public class LoanControllerIntegrationTest {
                 .expectStatus()
                 .isEqualTo(HttpStatus.CONFLICT);
 
-        assertThat(fundsManager.getCurrentFunds()).containsEntry("test", 350);
+        assertThat(fundsManager.getCurrentFunds()).containsEntry("test", 350D);
     }
 
     @Test
@@ -65,6 +65,6 @@ public class LoanControllerIntegrationTest {
                 .expectStatus()
                 .isEqualTo(HttpStatus.ACCEPTED);
 
-        assertThat(fundsManager.getCurrentFunds()).containsEntry("test", 350);
+        assertThat(fundsManager.getCurrentFunds()).containsEntry("test", 350D);
     }
 }

@@ -2,28 +2,27 @@ package io.vieira.xtremebanking;
 
 import io.vieira.xtremebanking.funds.FundsManager;
 import io.vieira.xtremebanking.funds.NotEnoughFundsException;
-import io.vieira.xtremebanking.loan.LoansBuffer;
+import io.vieira.xtremebanking.loan.LoanRequestsBuffer;
 import io.vieira.xtremebanking.models.LoanRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import javax.validation.Valid;
+import java.time.Duration;
 
 @RestController
 public class LoanController {
 
-    private final LoansBuffer loansBuffer;
+    private final LoanRequestsBuffer loanRequestsBuffer;
     private final FundsManager fundsManager;
     private final Integer callCost;
 
-    public LoanController(LoansBuffer buffer, FundsManager fundsManager, @Value("${xtreme-banking.call-cost:10}") Integer callCost) {
-        this.loansBuffer = buffer;
+    public LoanController(LoanRequestsBuffer buffer, FundsManager fundsManager, @Value("${xtreme-banking.call-cost:10}") Integer callCost) {
+        this.loanRequestsBuffer = buffer;
         this.fundsManager = fundsManager;
         this.callCost = callCost;
     }
@@ -41,8 +40,11 @@ public class LoanController {
                     return Mono.just(request);
                 })
                 .doOnNext(request -> this.fundsManager.spend(request.getBuyer(), this.callCost))
-                .doOnSuccess(loansBuffer::newLoanRequested);
+                .doOnSuccess(loanRequestsBuffer::newLoanRequested);
     }
 
-    // TODO : SSE endpoint to notify clients
+    @GetMapping(value = "/loan", produces = MediaType.APPLICATION_STREAM_JSON_VALUE)
+    public Flux<Object> eventStream() {
+        return Flux.interval(Duration.ofSeconds(2)).map(aLong -> new LoanRequest("etst", 150));
+    }
 }

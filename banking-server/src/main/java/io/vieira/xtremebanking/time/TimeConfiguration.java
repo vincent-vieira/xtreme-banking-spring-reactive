@@ -9,7 +9,7 @@ import reactor.core.publisher.Flux;
 public class TimeConfiguration {
 
     @Bean
-    public Flux<Integer> generator(@Value("${xtreme-banking.max-years:7}") int maxYears) {
+    public Flux<Integer> generator(@Value("${xtreme-banking.max-years:6}") int maxYears) {
         return YearGenerator.max(maxYears).create();
     }
 }

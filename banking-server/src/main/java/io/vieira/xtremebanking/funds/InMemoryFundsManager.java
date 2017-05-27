@@ -11,11 +11,11 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class InMemoryFundsManager implements FundsManager {
 
-    private final Integer initialFunds;
-    private final Map<String, Integer> funds = new ConcurrentHashMap<>();
+    private final Double initialFunds;
+    private final Map<String, Double> funds = new ConcurrentHashMap<>();
     private static final Logger LOGGER = LoggerFactory.getLogger(InMemoryFundsManager.class);
 
-    public InMemoryFundsManager(@Value("${xtreme-banking.initial-cash:100000}") Integer initialFunds) {
+    public InMemoryFundsManager(@Value("${xtreme-banking.initial-cash:100000}") Double initialFunds) {
         this.initialFunds = initialFunds;
     }
 
@@ -27,26 +27,38 @@ public class InMemoryFundsManager implements FundsManager {
     }
 
     @Override
-    public Map<String, Integer> getCurrentFunds() {
+    public Map<String, Double> getCurrentFunds() {
         return this.funds;
     }
 
     @Override
-    public void spend(String buyerId, int toSpend) {
+    public void spend(String buyerId, double toSpend) {
         if(!this.funds.containsKey(buyerId)) {
             throw new BuyerNotFoundException(buyerId);
         }
 
         if(this.hasEnoughFunds(buyerId, toSpend)) {
-            LOGGER.info("Buyer '{}' now has {}$", buyerId, this.funds.computeIfPresent(buyerId, (buyer, funds) -> funds - toSpend));
+            LOGGER.info("Buyer '{}' now has {}$", buyerId, this.funds.compute(buyerId, (buyer, funds) -> funds - toSpend));
+        }
+        else {
+            throw new NotEnoughFundsException(buyerId, toSpend, this.funds.get(buyerId));
         }
     }
 
     @Override
-    public boolean hasEnoughFunds(String buyerId, int required) {
+    public boolean hasEnoughFunds(String buyerId, double required) {
         if(!this.funds.containsKey(buyerId)) {
             throw new BuyerNotFoundException(buyerId);
         }
         return this.funds.get(buyerId) >= required;
+    }
+
+    @Override
+    public void addFunds(String buyerId, double revenue) {
+        if(!this.funds.containsKey(buyerId)) {
+            throw new BuyerNotFoundException(buyerId);
+        }
+
+        LOGGER.info("Buyer '{}' now has {}$", buyerId, this.funds.compute(buyerId, (buyer, funds) -> funds + revenue));
     }
 }

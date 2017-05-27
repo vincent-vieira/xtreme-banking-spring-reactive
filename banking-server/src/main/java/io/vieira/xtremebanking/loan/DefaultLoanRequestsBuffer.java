@@ -11,14 +11,14 @@ import java.util.LinkedList;
 import java.util.stream.Collectors;
 
 @Component
-public class DefaultLoansBuffer implements LoansBuffer {
+public class DefaultLoanRequestsBuffer implements LoanRequestsBuffer {
 
     //Buffer is 256 by default
     private final ReplayProcessor<LoanRequest> loanRequestProcessor = ReplayProcessor.create();
     private final Flux<Integer> partitionFlux;
-    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultLoansBuffer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultLoanRequestsBuffer.class);
 
-    public DefaultLoansBuffer(Flux<Integer> partitionFlux) {
+    public DefaultLoanRequestsBuffer(Flux<Integer> partitionFlux) {
         this.partitionFlux = partitionFlux;
     }
 
