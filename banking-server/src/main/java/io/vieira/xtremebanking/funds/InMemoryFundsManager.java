@@ -1,5 +1,7 @@
 package io.vieira.xtremebanking.funds;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -11,6 +13,7 @@ public class InMemoryFundsManager implements FundsManager {
 
     private final Integer initialFunds;
     private final Map<String, Integer> funds = new ConcurrentHashMap<>();
+    private static final Logger LOGGER = LoggerFactory.getLogger(InMemoryFundsManager.class);
 
     public InMemoryFundsManager(@Value("${xtreme-banking.initial-cash:100000}") Integer initialFunds) {
         this.initialFunds = initialFunds;
@@ -18,7 +21,9 @@ public class InMemoryFundsManager implements FundsManager {
 
     @Override
     public void tryNewBuyer(String buyerId) {
-        this.funds.putIfAbsent(buyerId, this.initialFunds);
+        if(this.funds.putIfAbsent(buyerId, this.initialFunds) == null) {
+            LOGGER.info("New buyer '{}' added to fund management.", buyerId);
+        }
     }
 
     @Override
@@ -28,7 +33,9 @@ public class InMemoryFundsManager implements FundsManager {
 
     @Override
     public void spend(String buyerId, int toSpend) {
-        if(this.hasEnoughFunds(buyerId, toSpend)) this.funds.computeIfPresent(buyerId, (buyer, funds) -> funds - toSpend);
+        if(this.hasEnoughFunds(buyerId, toSpend)) {
+            LOGGER.info("Buyer '{}' now has {}$", buyerId, this.funds.computeIfPresent(buyerId, (buyer, funds) -> funds - toSpend));
+        }
     }
 
     @Override
