@@ -3,6 +3,7 @@ package io.vieira.xtremebanking.models;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
 public class LoanRequest implements Comparable<LoanRequest> {
@@ -16,6 +17,7 @@ public class LoanRequest implements Comparable<LoanRequest> {
     @NotNull
     private String buyer;
 
+    @Min(1)
     private int offer;
 
     public String getBuyer() {
