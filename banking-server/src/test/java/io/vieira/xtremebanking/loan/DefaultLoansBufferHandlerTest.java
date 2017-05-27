@@ -17,6 +17,7 @@ public class DefaultLoansBufferHandlerTest {
 
     private LoansBuffer loansBuffer;
     private final ConfigurableApplicationContext applicationContext = Mockito.mock(ConfigurableApplicationContext.class);
+    private final LoanRequest sampleLoanRequest = new LoanRequest("someone", 150);
 
     @Test
     public void should_buffer_properly_throughout_a_year() {
@@ -27,7 +28,7 @@ public class DefaultLoansBufferHandlerTest {
                     this.loansBuffer = new DefaultLoansBuffer(YearGenerator.max(1).create(), applicationContext);
                     return this.loansBuffer.startBuffering();
                 })
-                .then(() -> this.loansBuffer.newLoanRequested(new LoanRequest()))
+                .then(() -> this.loansBuffer.newLoanRequested(sampleLoanRequest))
                 .thenAwait(Duration.ofSeconds(10))
                 .expectNextMatches(loanRequestBucket -> loanRequestBucket.getRequests().size() == 1)
                 .expectComplete()
@@ -41,9 +42,9 @@ public class DefaultLoansBufferHandlerTest {
                     this.loansBuffer = new DefaultLoansBuffer(YearGenerator.max(2).create(), applicationContext);
                     return this.loansBuffer.startBuffering();
                 })
-                .then(() -> this.loansBuffer.newLoanRequested(new LoanRequest()))
+                .then(() -> this.loansBuffer.newLoanRequested(sampleLoanRequest))
                 .thenAwait(Duration.ofSeconds(10))
-                .then(() -> this.loansBuffer.newLoanRequested(new LoanRequest()))
+                .then(() -> this.loansBuffer.newLoanRequested(sampleLoanRequest))
                 .thenAwait(Duration.ofSeconds(10))
                 .expectNextMatches(loanRequestBucket -> loanRequestBucket.getRequests().size() == 1 && loanRequestBucket.getYear() == 1)
                 .expectNextMatches(loanRequestBucket -> loanRequestBucket.getRequests().size() == 1 && loanRequestBucket.getYear() == 2)
