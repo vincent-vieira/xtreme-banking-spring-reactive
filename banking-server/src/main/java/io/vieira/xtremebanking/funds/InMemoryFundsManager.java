@@ -33,6 +33,10 @@ public class InMemoryFundsManager implements FundsManager {
 
     @Override
     public void spend(String buyerId, int toSpend) {
+        if(!this.funds.containsKey(buyerId)) {
+            throw new BuyerNotFoundException(buyerId);
+        }
+
         if(this.hasEnoughFunds(buyerId, toSpend)) {
             LOGGER.info("Buyer '{}' now has {}$", buyerId, this.funds.computeIfPresent(buyerId, (buyer, funds) -> funds - toSpend));
         }
@@ -40,6 +44,9 @@ public class InMemoryFundsManager implements FundsManager {
 
     @Override
     public boolean hasEnoughFunds(String buyerId, int required) {
-        return this.funds.getOrDefault(buyerId, 0) >= required;
+        if(!this.funds.containsKey(buyerId)) {
+            throw new BuyerNotFoundException(buyerId);
+        }
+        return this.funds.get(buyerId) >= required;
     }
 }
