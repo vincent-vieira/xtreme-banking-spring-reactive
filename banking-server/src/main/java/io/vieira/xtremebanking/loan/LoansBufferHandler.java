@@ -1,6 +1,7 @@
 package io.vieira.xtremebanking.loan;
 
 import io.vieira.xtremebanking.funds.FundsManager;
+import io.vieira.xtremebanking.funds.NotEnoughFundsException;
 import io.vieira.xtremebanking.loan.payment.LoanPayer;
 import io.vieira.xtremebanking.models.LoanRequest;
 import org.reactivestreams.Publisher;
@@ -39,7 +40,6 @@ public class LoansBufferHandler implements SmartLifecycle {
         LOGGER.info("Game on ! Starting year 1 and loan requests collection");
         this.loansSubscription = loanRequestsBuffer
                 .startBuffering()
-                .doOnComplete(applicationContext::close)
                 .flatMap(loanRequestsBucket ->  {
                     Optional<LoanRequest> winnerRequest = loanRequestsBucket.getRequests().stream().sorted().findFirst();
                     if(winnerRequest.isPresent()) {
@@ -47,18 +47,28 @@ public class LoansBufferHandler implements SmartLifecycle {
                         LOGGER.info("Winner for year {} is {} with a higher bid of {}", loanRequestsBucket.getYear(), winner.getBuyer(), winner.getOffer());
                         Publisher<Double> paymentStagger = this.loanPayer.staggerPaymentForDayAndRequest(loanRequestsBucket.getYear(), winner);
                         if(paymentStagger instanceof Flux) {
-                            ((Flux<Double>) paymentStagger).reduce((double) winner.getOffer(), (offer, currentRate) -> offer + currentRate);
-                            return paymentStagger;
+                            return ((Flux<Double>) paymentStagger)
+                                    .reduce((double) winner.getOffer(), (offer, currentRate) -> offer + currentRate)
+                                    .doOnNext(loanRevenue -> {
+                                        this.fundsManager.addFunds(winner.getBuyer(), loanRevenue);
+                                        LOGGER.info("Buyer '{}' has won {} with his progressive loan revenue.", winner.getBuyer(), loanRevenue);
+                                    })
+                                    // TODO : fill this
+                                    .doOnError(NotEnoughFundsException.class, notEnoughFundsException -> {});
                         }
                         else {
-                            return paymentStagger;
+                            return ((Mono<Double>) paymentStagger)
+                                    .doOnNext(loanRevenue -> this.fundsManager.addFunds(winner.getBuyer(), loanRevenue))
+                                    // TODO : fill this
+                                    .doOnError(NotEnoughFundsException.class, notEnoughFundsException -> {});
                         }
                     }
                     return Mono.empty();
                 })
-                // TODO : on error, notify the client that he lost the game ?
-                .doOnNext(loanRevenue -> this.fundsManager.addFunds("", loanRevenue))
-                // TODO : .onComplete, notify the winner and the other clients ?
+                .doOnComplete(() -> {
+                    // TODO : .onComplete, notify the winner and the other clients ?
+                    applicationContext.close();
+                })
                 .subscribe();
     }
 
