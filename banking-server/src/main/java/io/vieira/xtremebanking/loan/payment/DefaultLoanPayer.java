@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Component
@@ -51,18 +52,24 @@ public class DefaultLoanPayer implements LoanPayer {
             case 3:
             case 4:
             case 5:
-                toReturn = Mono.just(request.getOffer())
-                        .repeat(daysInAYear)
-                        .delayElements(dayDuration)
-                        .map(offer -> offer * ((yearNumber == 5 ? this.baseRate + this.specialRate : this.baseRate) / daysInAYear))
-                        .doOnNext(amountToAdd -> {
-                            if(yearNumber == 4 && !this.fundsManager.hasEnoughFunds(request.getBuyer(), 100000)) {
-                                // Fine him.
-                                // TODO : variabilize the amount of the fine ?
-                                LOGGER.warn("Buyer '{}' is not being honest with the regulations, and has been fined.", request.getBuyer());
-                                this.fundsManager.spend(request.getBuyer(), 5000);
-                            }
-                        });
+                toReturn = Flux.merge(
+                        // TODO : variabilize the input amount ?
+                        Mono.just(5000D)
+                                .repeat(monthsInAYear)
+                                .delayElements(monthDuration)
+                                .flatMap(fineAmount -> {
+                                    if(yearNumber == 4 && !this.fundsManager.hasEnoughFunds(request.getBuyer(), 100000)) {
+                                        LOGGER.warn("Buyer '{}' is not complying with the current regulations, and has been fined.", request.getBuyer());
+                                        this.fundsManager.spend(request.getBuyer(), fineAmount);
+                                    }
+                                    // Small trick to execute the action without passing anything to Flux.merge(), in order not to disturb the overlying sequence.
+                                    return Mono.empty();
+                                }),
+                        Mono.just(request.getOffer())
+                                .repeat(daysInAYear)
+                                .delayElements(dayDuration)
+                                .map(offer -> offer * ((yearNumber == 5 ? this.baseRate + this.specialRate : this.baseRate) / daysInAYear))
+                );
                 break;
             case 6:
                 toReturn = Mono.just(request.getOffer())

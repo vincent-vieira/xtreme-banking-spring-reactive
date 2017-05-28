@@ -17,7 +17,6 @@ import static io.vieira.xtremebanking.loan.payment.LoanPayer.daysInAYear;
 import static io.vieira.xtremebanking.loan.payment.LoanPayer.monthsInAYear;
 import static io.vieira.xtremebanking.time.YearGenerator.getDuration;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -84,7 +83,22 @@ public class DefaultLoanPayerTest {
                 .expectNext(dayRates)
                 .verifyComplete();
 
-        verify(fundsManager, atLeastOnce()).hasEnoughFunds(eq(sampleLoanRequest.getBuyer()), eq(100000D));
+        verify(fundsManager, times(monthsInAYear)).hasEnoughFunds(eq(sampleLoanRequest.getBuyer()), eq(100000D));
+    }
+
+
+    @Test
+    public void year_four_must_stagger_a_daily_payment_with_unexpected_fund_checks_and_fine_the_buyer_when_hes_not_following_regulations() {
+        fundsManager.spend(sampleLoanRequest.getBuyer(), 401000D);
+        Double[] dayRates = new Double[(int) daysInAYear];
+        Arrays.setAll(dayRates, value -> sampleLoanRequest.getOffer() * (this.baseRate / daysInAYear));
+
+        StepVerifier.withVirtualTime(() -> loanPayer.staggerPaymentForDayAndRequest(4, this.sampleLoanRequest))
+                .thenAwait(getDuration())
+                .expectNext(dayRates)
+                .verifyComplete();
+
+        verify(fundsManager, times(monthsInAYear)).spend(eq(sampleLoanRequest.getBuyer()), eq(5000D));
     }
 
     @Test
