@@ -2,40 +2,32 @@ package io.vieira.xtremebanking.models;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.hibernate.validator.constraints.NotEmpty;
 
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
-
-public class LoanRequest implements Comparable<LoanRequest> {
+public class LoanRequest {
 
     @JsonCreator
-    public LoanRequest(@JsonProperty("buyer") String buyer, @JsonProperty("offer") int offer) {
+    public LoanRequest(@JsonProperty("buyer") String buyer, @JsonProperty("loan") String loan) {
         this.buyer = buyer;
-        this.offer = offer;
+        this.loan = loan;
     }
 
-    @NotNull
+    @NotEmpty
     private String buyer;
 
-    @Min(1)
-    private int offer;
+    @NotEmpty
+    private final String loan;
 
     public String getBuyer() {
         return buyer;
     }
 
-    public int getOffer() {
-        return offer;
+    public String getLoan() {
+        return loan;
     }
 
     @Override
     public String toString() {
-        return "LoanRequest{buyer="+ this.buyer + ", offer="+ this.offer +"}";
-    }
-
-    @Override
-    public int compareTo(LoanRequest o) {
-        if(o == null) return 1;
-        return Integer.compare(o.getOffer(), this.offer);
+        return "LoanRequest{buyer="+ this.buyer + ", loan="+ this.loan +"}";
     }
 }
