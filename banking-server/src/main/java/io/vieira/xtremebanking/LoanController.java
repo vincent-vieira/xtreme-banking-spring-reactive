@@ -1,18 +1,23 @@
 package io.vieira.xtremebanking;
 
 import io.vieira.xtremebanking.funds.FundsManager;
-import io.vieira.xtremebanking.funds.NotEnoughFundsException;
+import io.vieira.xtremebanking.loan.LoanNotFoundException;
 import io.vieira.xtremebanking.loan.LoanRequestsBuffer;
+import io.vieira.xtremebanking.loan.generation.BorrowerGenerator;
+import io.vieira.xtremebanking.models.LoanBorrower;
 import io.vieira.xtremebanking.models.LoanRequest;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import javax.validation.Valid;
-import java.time.Duration;
+import java.util.List;
 
 @RestController
 public class LoanController {
@@ -20,31 +25,35 @@ public class LoanController {
     private final LoanRequestsBuffer loanRequestsBuffer;
     private final FundsManager fundsManager;
     private final Integer callCost;
+    private final Flux<List<LoanBorrower>> borrowers;
 
-    public LoanController(LoanRequestsBuffer buffer, FundsManager fundsManager, @Value("${xtreme-banking.call-cost:10}") Integer callCost) {
+    public LoanController(LoanRequestsBuffer buffer,
+                          FundsManager fundsManager,
+                          @Value("${xtreme-banking.call-cost:10}") Integer callCost,
+                          BorrowerGenerator borrowers) {
         this.loanRequestsBuffer = buffer;
         this.fundsManager = fundsManager;
         this.callCost = callCost;
+        this.borrowers = borrowers.getGenerator();
     }
 
-    @PostMapping(value = "/loan", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    @ResponseStatus(HttpStatus.ACCEPTED)
-    public Mono<LoanRequest> loanStream(@RequestBody @Valid Mono<LoanRequest> loanRequest) {
-        return loanRequest
-                // Always make sure a new client has its initial funds
-                .doOnNext(request -> this.fundsManager.tryNewBuyer(request.getBuyer()))
-                .flatMap(request -> {
-                    if(!this.fundsManager.hasEnoughFunds(request.getBuyer(), request.getOffer())) {
-                        return Mono.error(new NotEnoughFundsException(request));
-                    }
-                    return Mono.just(request);
-                })
+    @PostMapping(value = "/loans")
+    public Mono<ResponseEntity> bid(@RequestBody @Valid Mono<LoanRequest> bidRequest) {
+        return bidRequest
+                .flux()
                 .doOnNext(request -> this.fundsManager.spend(request.getBuyer(), this.callCost))
-                .doOnSuccess(loanRequestsBuffer::newLoanRequested);
+                .withLatestFrom(this.borrowers, (request, loanBorrowers) -> {
+                    if(loanBorrowers.stream().anyMatch(loanBorrower -> loanBorrower.getId().equals(request.getLoan()))) {
+                        return request;
+                    }
+                    throw new LoanNotFoundException(request);
+                })
+                .doOnNext(loanRequestsBuffer::newLoanRequested)
+                .then(Mono.just(ResponseEntity.accepted().build()));
     }
 
-    @GetMapping(value = "/loan", produces = MediaType.APPLICATION_STREAM_JSON_VALUE)
-    public Flux<Object> eventStream() {
-        return Flux.interval(Duration.ofSeconds(2)).map(aLong -> new LoanRequest("etst", 150));
+    @GetMapping(value = "/loans", produces = MediaType.APPLICATION_STREAM_JSON_VALUE)
+    public Flux<List<LoanBorrower>> currentBorrowers() {
+        return this.borrowers.share();
     }
 }

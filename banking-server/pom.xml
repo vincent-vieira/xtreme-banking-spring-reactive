@@ -29,6 +29,11 @@
             <artifactId>banking-models</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>io.projectreactor.addons</groupId>
             <artifactId>reactor-test</artifactId>
             <scope>test</scope>
@@ -51,6 +56,11 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.googlecode.zohhak</groupId>
+            <artifactId>zohhak</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

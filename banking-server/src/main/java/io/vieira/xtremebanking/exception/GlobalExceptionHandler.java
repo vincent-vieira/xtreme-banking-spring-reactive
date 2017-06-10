@@ -2,25 +2,25 @@ package io.vieira.xtremebanking.exception;
 
 import io.vieira.xtremebanking.funds.FundsManager;
 import io.vieira.xtremebanking.funds.NotEnoughFundsException;
+import io.vieira.xtremebanking.loan.LoanNotFoundException;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Component;
-import org.springframework.web.server.ServerWebExchange;
-import org.springframework.web.server.WebExceptionHandler;
-import reactor.core.publisher.Mono;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 
-@Component
-public class GlobalExceptionHandler implements WebExceptionHandler {
+@ControllerAdvice
+public class GlobalExceptionHandler {
 
-    @Override
-    public Mono<Void> handle(ServerWebExchange exchange, Throwable ex) {
-        if(ex instanceof FundsManager.BuyerNotFoundException) {
-            exchange.getResponse().setStatusCode(HttpStatus.NOT_FOUND);
-            return exchange.getResponse().setComplete();
-        }
-        else if(ex instanceof NotEnoughFundsException) {
-            exchange.getResponse().setStatusCode(HttpStatus.CONFLICT);
-            return exchange.getResponse().setComplete();
-        }
-        return Mono.error(ex);
+    @ExceptionHandler(NotEnoughFundsException.class)
+    public ResponseEntity handleNotEnoughFundsException() {
+        return ResponseEntity.status(HttpStatus.CONFLICT).build();
+    }
+
+    @ExceptionHandler({
+            FundsManager.BuyerNotFoundException.class,
+            LoanNotFoundException.class
+    })
+    public ResponseEntity handleLoanOrBuyerNotFoundException() {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
     }
 }

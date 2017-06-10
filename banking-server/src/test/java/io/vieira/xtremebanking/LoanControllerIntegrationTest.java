@@ -3,11 +3,15 @@ package io.vieira.xtremebanking;
 import io.vieira.xtremebanking.exception.GlobalExceptionHandler;
 import io.vieira.xtremebanking.funds.FundsManager;
 import io.vieira.xtremebanking.loan.LoanRequestsBuffer;
+import io.vieira.xtremebanking.loan.generation.BorrowerGenerator;
+import io.vieira.xtremebanking.models.LoanBorrower;
 import io.vieira.xtremebanking.models.LoanRequest;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
+import org.springframework.boot.test.context.TestComponent;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.http.HttpStatus;
@@ -16,6 +20,10 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.BodyInserters;
+import reactor.core.publisher.Flux;
+
+import java.util.Collections;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -31,6 +39,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 })
 public class LoanControllerIntegrationTest {
 
+    // This annotation is just pure magic.
+    @TestComponent
+    static class TestBorrowerGenerator implements BorrowerGenerator {
+
+        @Override
+        public Flux<List<LoanBorrower>> getGenerator() {
+            return Flux.just(Collections.singletonList(new LoanBorrower("idloan", 10000, 102)));
+        }
+    }
+
     @Autowired
     private WebTestClient webTestClient;
 
@@ -40,31 +58,47 @@ public class LoanControllerIntegrationTest {
     @Autowired
     private FundsManager fundsManager;
 
+    @Before
+    public void setup() {
+        // The buyer should be already created
+        fundsManager.tryNewBuyer("test");
+    }
+
     @Test
     public void calling_with_a_faulty_loan_request_should_decrement_the_funds_with_the_call_cost_only() throws Exception {
         webTestClient
                 .post()
-                .uri("loan")
+                .uri("loans")
                 .contentType(MediaType.APPLICATION_JSON_UTF8)
-                .body(BodyInserters.fromObject(new LoanRequest("test", 800)))
+                .body(BodyInserters.fromObject(new LoanRequest("test", "loan")))
                 .exchange()
                 .expectStatus()
-                .isEqualTo(HttpStatus.CONFLICT);
+                .isEqualTo(HttpStatus.NOT_FOUND);
+    }
 
-        assertThat(fundsManager.getCurrentFunds()).containsEntry("test", 350D);
+    @Test
+    public void calling_with_a_loan_request_with_an_unknown_user_should_return_an_error() throws Exception {
+        webTestClient
+                .post()
+                .uri("loans")
+                .contentType(MediaType.APPLICATION_JSON_UTF8)
+                .body(BodyInserters.fromObject(new LoanRequest("test2", "idloan")))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(HttpStatus.NOT_FOUND);
     }
 
     @Test
     public void calling_with_a_valid_loan_request_should_decrement_the_funds_with_the_call_cost_only() throws Exception {
         webTestClient
                 .post()
-                .uri("loan")
+                .uri("loans")
                 .contentType(MediaType.APPLICATION_JSON_UTF8)
-                .body(BodyInserters.fromObject(new LoanRequest("test", 200)))
+                .body(BodyInserters.fromObject(new LoanRequest("test", "idloan")))
                 .exchange()
                 .expectStatus()
                 .isEqualTo(HttpStatus.ACCEPTED);
-
+        
         assertThat(fundsManager.getCurrentFunds()).containsEntry("test", 350D);
     }
 }

@@ -14,7 +14,7 @@ import static io.vieira.xtremebanking.time.YearGenerator.getDuration;
 public class DefaultLoanRequestsBufferHandlerTest {
 
     private LoanRequestsBuffer loanRequestsBuffer;
-    private final LoanRequest sampleLoanRequest = new LoanRequest("someone", 150);
+    private final LoanRequest sampleLoanRequest = new LoanRequest("someone", "someoneelse");
 
     @Test
     public void should_buffer_properly_throughout_a_year() {

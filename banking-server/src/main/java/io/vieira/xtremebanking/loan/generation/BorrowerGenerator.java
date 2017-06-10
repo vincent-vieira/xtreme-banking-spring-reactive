@@ -5,6 +5,7 @@ import reactor.core.publisher.Flux;
 
 import java.util.List;
 
+@FunctionalInterface
 public interface BorrowerGenerator {
-    Flux<List<LoanBorrower>> generate();
+    Flux<List<LoanBorrower>> getGenerator();
 }

@@ -2,6 +2,8 @@ package io.vieira.xtremebanking.loan.generation;
 
 import io.vieira.xtremebanking.models.LoanBorrower;
 import org.apache.commons.lang3.RandomUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -10,19 +12,17 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+@Component
 public class DefaultBorrowerGenerator implements BorrowerGenerator {
 
     private final Flux<Integer> yearGenerator;
     private final Integer maxBorrowersPerYear;
+    private final Flux<List<LoanBorrower>> generator;
 
-    public DefaultBorrowerGenerator(Flux<Integer> yearGenerator, Integer maxBorrowersPerYear) {
+    public DefaultBorrowerGenerator(Flux<Integer> yearGenerator, @Value("${xtreme-banking.max-borrowers-per-year:10}") Integer maxBorrowersPerYear) {
         this.yearGenerator = yearGenerator;
         this.maxBorrowersPerYear = maxBorrowersPerYear;
-    }
-
-    @Override
-    public Flux<List<LoanBorrower>> generate() {
-        return Mono.just(1)
+        this.generator = Mono.just(1)
                 .concatWith(this.yearGenerator)
                 // As we're appending an initial generation, we need to squeeze the last one associated with the last year end.
                 .skipLast(1)
@@ -35,5 +35,10 @@ public class DefaultBorrowerGenerator implements BorrowerGenerator {
                         ))
                         .collect(Collectors.toList())
                 );
+    }
+
+    @Override
+    public Flux<List<LoanBorrower>> getGenerator() {
+        return this.generator;
     }
 }

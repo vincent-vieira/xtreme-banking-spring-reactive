@@ -21,7 +21,7 @@ public class DefaultBorrowerGeneratorTest {
     public void each_year_borrowers_should_be_generated(int maxBorrowers) throws Exception {
         final Predicate<List<LoanBorrower>> borrowersChecker = loanBorrowers -> loanBorrowers.size() == maxBorrowers;
         StepVerifier
-                .withVirtualTime(() -> new DefaultBorrowerGenerator(YearGenerator.max(5).create(), maxBorrowers).generate())
+                .withVirtualTime(() -> new DefaultBorrowerGenerator(YearGenerator.max(5).create(), maxBorrowers).getGenerator())
                 .thenAwait(YearGenerator.getDuration())
                 .expectNextMatches(borrowersChecker)
                 .thenAwait(YearGenerator.getDuration())
