@@ -26,7 +26,7 @@ public interface YearGenerator {
             case END:
                 return () -> Flux.range(1, limit).delayElements(getDuration());
             case BEGIN:
-                return () -> Mono.just(1).thenMany(Flux.range(2, limit).delayElements(getDuration()));
+                return () -> Flux.range(1, limit).concatMap(year -> Mono.just(year).delayElement(year > 1 ? getDuration() : Duration.ofNanos(0)));
             default:
                 throw new IllegalStateException("wat");
         }
