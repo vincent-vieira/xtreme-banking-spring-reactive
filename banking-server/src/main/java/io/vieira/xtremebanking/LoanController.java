@@ -4,28 +4,25 @@ import io.vieira.xtremebanking.funds.FundsManager;
 import io.vieira.xtremebanking.loan.LoanNotFoundException;
 import io.vieira.xtremebanking.loan.LoanRequestsBuffer;
 import io.vieira.xtremebanking.loan.generation.BorrowerGenerator;
-import io.vieira.xtremebanking.models.LoanBorrower;
+import io.vieira.xtremebanking.models.LoanBorrowerBucket;
 import io.vieira.xtremebanking.models.LoanRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import javax.validation.Valid;
-import java.util.List;
 
 @RestController
+@RequestMapping("/loans")
 public class LoanController {
 
     private final LoanRequestsBuffer loanRequestsBuffer;
     private final FundsManager fundsManager;
     private final Integer callCost;
-    private final Flux<List<LoanBorrower>> borrowers;
+    private final Flux<LoanBorrowerBucket> borrowers;
 
     public LoanController(LoanRequestsBuffer buffer,
                           FundsManager fundsManager,
@@ -37,13 +34,13 @@ public class LoanController {
         this.borrowers = borrowers.getGenerator();
     }
 
-    @PostMapping(value = "/loans")
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public Mono<ResponseEntity> bid(@RequestBody @Valid Mono<LoanRequest> bidRequest) {
         return bidRequest
                 .flux()
                 .doOnNext(request -> this.fundsManager.spend(request.getBuyer(), this.callCost))
                 .withLatestFrom(this.borrowers, (request, loanBorrowers) -> {
-                    if(loanBorrowers.stream().anyMatch(loanBorrower -> loanBorrower.getId().equals(request.getLoan()))) {
+                    if(loanBorrowers.getBorrowers().stream().anyMatch(loanBorrower -> loanBorrower.getId().equals(request.getLoan()))) {
                         return request;
                     }
                     throw new LoanNotFoundException(request);
@@ -52,8 +49,8 @@ public class LoanController {
                 .then(Mono.just(ResponseEntity.accepted().build()));
     }
 
-    @GetMapping(value = "/loans", produces = MediaType.APPLICATION_STREAM_JSON_VALUE)
-    public Flux<List<LoanBorrower>> currentBorrowers() {
+    @GetMapping(produces = MediaType.APPLICATION_STREAM_JSON_VALUE)
+    public Flux<LoanBorrowerBucket> currentBorrowers() {
         return this.borrowers.share();
     }
 }

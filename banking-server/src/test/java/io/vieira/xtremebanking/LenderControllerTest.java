@@ -27,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         FundsManager.class,
         GlobalExceptionHandler.class
 })
-public class LenderControllerIntegrationTest {
+public class LenderControllerTest {
 
     @Autowired
     private WebTestClient webTestClient;

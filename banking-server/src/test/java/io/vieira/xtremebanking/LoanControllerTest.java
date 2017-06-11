@@ -5,6 +5,7 @@ import io.vieira.xtremebanking.funds.FundsManager;
 import io.vieira.xtremebanking.loan.LoanRequestsBuffer;
 import io.vieira.xtremebanking.loan.generation.BorrowerGenerator;
 import io.vieira.xtremebanking.models.LoanBorrower;
+import io.vieira.xtremebanking.models.LoanBorrowerBucket;
 import io.vieira.xtremebanking.models.LoanRequest;
 import org.junit.Before;
 import org.junit.Test;
@@ -23,7 +24,6 @@ import org.springframework.web.reactive.function.BodyInserters;
 import reactor.core.publisher.Flux;
 
 import java.util.Collections;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -37,15 +37,15 @@ import static org.assertj.core.api.Assertions.assertThat;
         FundsManager.class,
         GlobalExceptionHandler.class
 })
-public class LoanControllerIntegrationTest {
+public class LoanControllerTest {
 
     // This annotation is just pure magic.
     @TestComponent
     static class TestBorrowerGenerator implements BorrowerGenerator {
 
         @Override
-        public Flux<List<LoanBorrower>> getGenerator() {
-            return Flux.just(Collections.singletonList(new LoanBorrower("idloan", 10000, 102)));
+        public Flux<LoanBorrowerBucket> getGenerator() {
+            return Flux.just(new LoanBorrowerBucket(1, Collections.singletonList(new LoanBorrower("idloan", 10000, 102))));
         }
     }
 
