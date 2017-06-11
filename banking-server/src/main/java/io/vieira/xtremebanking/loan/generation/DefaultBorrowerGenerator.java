@@ -3,10 +3,10 @@ package io.vieira.xtremebanking.loan.generation;
 import io.vieira.xtremebanking.models.LoanBorrower;
 import io.vieira.xtremebanking.models.LoanBorrowerBucket;
 import org.apache.commons.lang3.RandomUtils;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -19,13 +19,10 @@ public class DefaultBorrowerGenerator implements BorrowerGenerator {
     private final Integer maxBorrowersPerYear;
     private final Flux<LoanBorrowerBucket> generator;
 
-    public DefaultBorrowerGenerator(Flux<Integer> yearGenerator, @Value("${xtreme-banking.max-borrowers-per-year:10}") Integer maxBorrowersPerYear) {
+    public DefaultBorrowerGenerator(@Qualifier("yearBeginGenerator") Flux<Integer> yearGenerator, @Value("${xtreme-banking.max-borrowers-per-year:10}") Integer maxBorrowersPerYear) {
         this.yearGenerator = yearGenerator;
         this.maxBorrowersPerYear = maxBorrowersPerYear;
-        this.generator = Mono.just(1)
-                // As we're appending an initial generation, we need to squeeze the last one associated with the last year end.
-                // And we also need to start years from two, not one !
-                .mergeWith(this.yearGenerator.map(year -> year + 1).skipLast(1))
+        this.generator = this.yearGenerator
                 .map(year -> new LoanBorrowerBucket(
                         year,
                         IntStream
@@ -37,7 +34,10 @@ public class DefaultBorrowerGenerator implements BorrowerGenerator {
                                 ))
                                 .collect(Collectors.toList())
                     )
-                );
+                )
+                .share();
+        // We need to subscribe to trigger a simulatenous generation, compared to YearGenerator.
+        this.generator.subscribe();
     }
 
     @Override

@@ -3,6 +3,7 @@ package io.vieira.xtremebanking.loan;
 import io.vieira.xtremebanking.models.LoanRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.ReplayProcessor;
@@ -18,7 +19,7 @@ public class DefaultLoanRequestsBuffer implements LoanRequestsBuffer {
     private final Flux<Integer> partitionFlux;
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultLoanRequestsBuffer.class);
 
-    public DefaultLoanRequestsBuffer(Flux<Integer> partitionFlux) {
+    public DefaultLoanRequestsBuffer(@Qualifier("yearEndGenerator") Flux<Integer> partitionFlux) {
         this.partitionFlux = partitionFlux;
     }
 

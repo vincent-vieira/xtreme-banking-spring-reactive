@@ -51,6 +51,6 @@ public class LoanController {
 
     @GetMapping(produces = MediaType.APPLICATION_STREAM_JSON_VALUE)
     public Flux<LoanBorrowerBucket> currentBorrowers() {
-        return this.borrowers.share();
+        return this.borrowers;
     }
 }

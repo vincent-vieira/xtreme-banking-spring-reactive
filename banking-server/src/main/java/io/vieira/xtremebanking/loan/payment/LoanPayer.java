@@ -17,7 +17,7 @@ public interface LoanPayer {
     long daysInAYear = daysInAMonth * monthsInAYear;
     Duration dayDuration = monthDuration.dividedBy(daysInAMonth);
 
-    // The payment can be either in one-shot, or staggered across multiple times. We need the base interface,
-    // then, we can't choose between Flux and Mono.
-    Publisher<Double> staggerPaymentForDayAndRequest(int yearNumber, LoanRequest request);
+    // The payment can be either in one-shot, or staggered across multiple time frames. We need to return the base interface type,
+    // we can't choose between Flux and Mono.
+    Publisher<Double> staggerPaymentForYearAndRequest(int yearNumber, LoanRequest request);
 }

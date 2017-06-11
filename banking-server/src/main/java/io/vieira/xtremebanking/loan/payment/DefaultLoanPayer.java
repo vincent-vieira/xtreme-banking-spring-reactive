@@ -7,8 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 @Component
 public class DefaultLoanPayer implements LoanPayer {
@@ -32,10 +30,10 @@ public class DefaultLoanPayer implements LoanPayer {
     }
 
     @Override
-    public Publisher<Double> staggerPaymentForDayAndRequest(int yearNumber, LoanRequest request) {
-        Publisher<Double> toReturn;
+    public Publisher<Double> staggerPaymentForYearAndRequest(int yearNumber, LoanRequest request) {
+        Publisher<Double> toReturn = null;
 
-        switch(yearNumber) {
+        /*switch(yearNumber) {
             case 1:
                 toReturn = Mono
                         .just(request.getOffer())
@@ -85,7 +83,7 @@ public class DefaultLoanPayer implements LoanPayer {
             default:
                 toReturn = Mono.empty();
                 break;
-        }
+        }*/
 
         return toReturn;
     }
