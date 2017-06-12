@@ -5,10 +5,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class LoanBorrower {
 
+    @JsonProperty("id")
     private final String id;
 
+    @JsonProperty("borrowed")
     private final Integer amount;
 
+    @JsonProperty("immediate")
     private final Integer immediatePayment;
 
     @JsonCreator

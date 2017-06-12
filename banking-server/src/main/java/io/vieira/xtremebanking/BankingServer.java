@@ -8,6 +8,7 @@ import io.vieira.xtremebanking.time.TimeConfiguration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+// TODO : map all @Values to @ConfigurationProperty ?
 @SpringBootApplication(scanBasePackageClasses = {
         TimeConfiguration.class,
         BorrowerGenerator.class,

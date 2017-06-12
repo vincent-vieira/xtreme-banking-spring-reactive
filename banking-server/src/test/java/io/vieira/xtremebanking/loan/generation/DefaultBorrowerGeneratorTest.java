@@ -24,7 +24,14 @@ public class DefaultBorrowerGeneratorTest {
         };
 
         StepVerifier
-                .withVirtualTime(() -> new DefaultBorrowerGenerator(YearGenerator.max(5).create(), maxBorrowers).getGenerator())
+                .withVirtualTime(() -> new DefaultBorrowerGenerator(
+                        YearGenerator.max(5).create(),
+                        maxBorrowers,
+                        150,
+                        350,
+                        20,
+                        150
+                ).getGenerator())
                 .thenAwait(YearGenerator.getDuration())
                 .expectNextMatches(borrowersChecker.apply(1))
                 .thenAwait(YearGenerator.getDuration())

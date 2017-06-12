@@ -3,8 +3,8 @@ package io.vieira.xtremebanking.loan;
 import io.vieira.xtremebanking.funds.FundsManager;
 import io.vieira.xtremebanking.loan.generation.BorrowerGenerator;
 import io.vieira.xtremebanking.loan.payment.LoanPayer;
-import io.vieira.xtremebanking.models.LoanBorrower;
-import io.vieira.xtremebanking.models.LoanBorrowerBucket;
+import io.vieira.xtremebanking.models.*;
+import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.SmartLifecycle;
@@ -13,7 +13,6 @@ import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Component
@@ -47,17 +46,39 @@ public class LoansBufferHandler implements SmartLifecycle {
                 .map(bucketAndBorrowers -> {
                     List<LoanBorrower> borrowers = bucketAndBorrowers.getT2().getBorrowers();
                     LoanRequestBucket bucket = bucketAndBorrowers.getT1();
-                    return new LoanRequestBucket(bucket.getYear(), borrowers.stream()
-                            .map(borrower -> bucket.getRequests()
-                                    .stream()
-                                    .filter(request -> request.getLoan().equals(borrower.getId()))
-                                    // TODO : add filtering based on theorical cashback ?
-                                    .findFirst()
-                                    .orElse(null)
-                            )
-                            .filter(Objects::nonNull)
-                            .collect(Collectors.toList())
+                    LOGGER.info(
+                            "{} borrowers with {} loan requests for year {}",
+                            borrowers.size(),
+                            bucket.getRequests().size(),
+                            bucket.getYear()
                     );
+                    return new ConcludedLoanDealBucket(
+                            bucket.getYear(),
+                            borrowers.stream()
+                                .map(borrower -> new ConcludedLoanDeal(
+                                        bucket.getRequests()
+                                                .stream()
+                                                .filter(request -> request.getLoan().equals(borrower.getId()))
+                                                // TODO : add filtering based on theorical cashback ?
+                                                .findFirst()
+                                                .map(LoanRequest::getBuyer)
+                                                .orElse(null),
+                                        borrower
+                                ))
+                                .filter(concludedLoanDeal -> concludedLoanDeal.getBuyer() != null)
+                                .collect(Collectors.toList())
+                    );
+                })
+                .flatMap(concludedDeals -> {
+                    List<Publisher<Double>> staggers = concludedDeals.getConcludedDeals().stream().map(concludedDeal -> {
+                        // Immediate payment is not withdrawn from borrower's account as they're virtual.
+                        this.fundsManager.spend(
+                                concludedDeal.getBuyer(),
+                                concludedDeal.getBorrower().getAmount() - concludedDeal.getBorrower().getImmediatePayment()
+                        );
+                        return this.loanPayer.staggerPaymentForYearAndRequest(concludedDeals.getYear(), concludedDeal);
+                    }).collect(Collectors.toList());
+                    return Flux.merge(staggers);
                 })
                 .subscribe();
     }

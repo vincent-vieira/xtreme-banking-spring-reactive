@@ -36,13 +36,8 @@ public class InMemoryFundsManager implements FundsManager {
         if(!this.funds.containsKey(buyerId)) {
             throw new BuyerNotFoundException(buyerId);
         }
-
-        if(this.hasEnoughFunds(buyerId, toSpend)) {
-            LOGGER.info("Buyer '{}' now has {}$", buyerId, this.funds.compute(buyerId, (buyer, funds) -> funds - toSpend));
-        }
-        else {
-            throw new NotEnoughFundsException(buyerId, toSpend, this.funds.get(buyerId));
-        }
+        // We're in a stock exchange bank. We don't care about spending more money than we have. ;)
+        LOGGER.info("Buyer '{}' now has {}$", buyerId, this.funds.compute(buyerId, (buyer, funds) -> funds - toSpend));
     }
 
     @Override

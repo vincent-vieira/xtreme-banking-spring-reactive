@@ -1,6 +1,6 @@
 package io.vieira.xtremebanking.loan.payment;
 
-import io.vieira.xtremebanking.models.LoanRequest;
+import io.vieira.xtremebanking.models.ConcludedLoanDeal;
 import org.reactivestreams.Publisher;
 
 import java.time.Duration;
@@ -19,5 +19,5 @@ public interface LoanPayer {
 
     // The payment can be either in one-shot, or staggered across multiple time frames. We need to return the base interface type,
     // we can't choose between Flux and Mono.
-    Publisher<Double> staggerPaymentForYearAndRequest(int yearNumber, LoanRequest request);
+    Publisher<Double> staggerPaymentForYearAndRequest(int yearNumber, ConcludedLoanDeal request);
 }
