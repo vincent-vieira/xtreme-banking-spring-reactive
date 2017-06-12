@@ -41,11 +41,11 @@ public class DefaultLoanPayer implements LoanPayer {
                 toReturn = Mono
                         .just(loanAmount)
                         .delayElement(yearDuration)
-                        .map(offer -> offer * rateMultiplier)
-                        .doOnNext(loanRevenue -> LOGGER.info("Buyer '{}' just won {} with his successful loan.", request.getBuyer(), loanRevenue));
+                        .map(offer -> offer * rateMultiplier);
                 break;
             case 2:
-                toReturn = Mono.just(loanAmount)
+                toReturn = Mono
+                        .just(loanAmount)
                         .repeat(monthsInAYear)
                         .delayElements(monthDuration)
                         .map(offer -> offer * (this.baseRate / monthsInAYear));
@@ -88,6 +88,9 @@ public class DefaultLoanPayer implements LoanPayer {
                 break;
         }
         return toReturn instanceof Mono ? ((Mono<Double>) toReturn): ((Flux<Double>) toReturn)
-                .doOnNext(loanRevenue -> this.fundsManager.addFunds(request.getBuyer(), loanRevenue));
+                .doOnNext(loanRevenue -> {
+                    this.fundsManager.addFunds(request.getBuyer(), loanRevenue);
+                    LOGGER.info("Buyer '{}' just won {} with his successful loan.", request.getBuyer(), loanRevenue);
+                });
     }
 }
