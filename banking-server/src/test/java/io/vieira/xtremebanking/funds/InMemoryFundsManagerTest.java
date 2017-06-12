@@ -1,6 +1,5 @@
 package io.vieira.xtremebanking.funds;
 
-import org.hamcrest.core.StringContains;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -41,7 +40,7 @@ public class InMemoryFundsManagerTest {
     }
 
     @Test
-    public void should_spend_funds_properly() {
+    public void should_check_funds_properly() {
         manager.tryNewBuyer("test");
 
         //It shouldn't reset the buyer's funds when accidently re-adding him.
@@ -50,10 +49,6 @@ public class InMemoryFundsManagerTest {
         assertThat(manager.getCurrentFunds()).containsEntry("test", 30D);
         assertThat(manager.hasEnoughFunds("test", 40)).isFalse();
         assertThat(manager.hasEnoughFunds("test", 10)).isTrue();
-
-        expectedException.expect(NotEnoughFundsException.class);
-        expectedException.expectMessage(new StringContains("but doesn't have sufficient funds"));
-        manager.spend("test", 150);
     }
 
     @Test
